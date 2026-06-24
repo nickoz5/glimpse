@@ -18,7 +18,7 @@ Add requirements here as they become known. Use clear, testable language where p
 
 ### Functional Requirements
 
-Glimpse must support MacOS, but may be extended to Windows users later.
+Glimpse must support macOS 26.0 and newer only.
 Glimpse should provide a simple icon in the menu bar on MacOS or Windows system tray.
 When the icon is clicked, a small "Glimpse" window should appear showing the video from the default camera.
 The position of the "Glimpse" window should be movable by the user by clicking anywhere in the window and dragging.
@@ -34,24 +34,24 @@ If the camera is unable to start, show a black window with a clear and well styl
 
 ### Non-Functional Requirements
 
-Application must support cross platform but be a native application for MacOS and Windows later.
+Application must be a native macOS 26.0+ application.
 Use standard and well supported open-source libraries for implementation.
 
 
 ## Architecture Notes
 
-Glimpse should be designed as a small native desktop utility, not a full windowed application. The default user interaction is through a macOS menu bar icon, with Windows system tray support planned for a later phase.
+Glimpse should be designed as a small native desktop utility, not a full windowed application. The default user interaction is through a macOS menu bar icon.
 
 Recommended stack:
 
 - Application framework: Tauri v2.
 - Native/application layer: Rust.
-- Frontend layer: Svelte, TypeScript, and Vite.
-- Camera preview: browser `navigator.mediaDevices.getUserMedia()` in the Tauri WebView.
+- Native macOS UI layer: AppKit.
+- Camera preview: native macOS `AVCaptureSession` / `AVCaptureVideoPreviewLayer`.
 - Preferences: Tauri store plugin or a small Rust-managed user config file.
 - Startup on boot: Tauri autostart plugin.
 - Packaging: Tauri bundler, with macOS signing/notarization and Windows code signing added before distribution.
-- Testing: Rust unit tests, Vitest for frontend logic, and Playwright/WebDriver-style smoke tests where useful.
+- Testing: Rust unit tests where practical, plus manual macOS validation for tray behavior, camera permission prompts, camera effects integration, and window placement.
 
 - Main modules/components:
   - Application shell for native lifecycle management.
@@ -104,6 +104,7 @@ Recommended stack:
 - Use clear labels for camera selection, startup-on-boot, and exit actions.
 - Handle camera permission errors, missing cameras, and busy cameras with plain user-facing messages.
 - Match native platform conventions on macOS first, while avoiding design choices that block future Windows support.
+- Keep camera capture native on each platform so operating-system camera indicators and video effects work correctly.
 
 ## Code Quality Bar
 
@@ -117,20 +118,21 @@ Before considering work complete, verify:
 
 ## Common Commands
 
-Fill these in once the implementation stack is chosen.
-
 ```sh
 # Install dependencies
-TODO
+npm install
 
 # Run development server
-TODO
+npm run tauri dev
 
 # Run tests
-TODO
+cargo check --manifest-path src/Cargo.toml
 
 # Run lint/type checks
-TODO
+cargo check --manifest-path src/Cargo.toml
+
+# Regenerate packaging icons after changing src/icons/icon-large.png
+npm run icons
 ```
 
 ## Repository Conventions
