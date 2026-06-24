@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE_ICON="${1:-src/icons/icon-large.png}"
+SOURCE_ICON="${1:-src-tauri/icons/icon-large.png}"
 
 if [[ ! -f "$SOURCE_ICON" ]]; then
   echo "Icon source not found: $SOURCE_ICON" >&2

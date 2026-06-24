@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "icons": "bash scripts/regenerate-icons.sh",
-    "icons:source": "bash scripts/regenerate-icons.sh src/icons/icon-large.png",
+    "icons:source": "bash scripts/regenerate-icons.sh src-tauri/icons/icon-large.png",
     "tauri": "tauri"
   },
   "dependencies": {},

@@ -64,7 +64,7 @@ Glimpse appears in the macOS menu bar. Click the menu bar icon to show the camer
 npm run tauri build
 ```
 
-The packaged app is written under `src/target/release/bundle/`.
+The packaged app is written under `src-tauri/target/release/bundle/`.
 
 For local testing, open the generated `.app`. For distribution, add proper macOS code signing and notarization before sharing the app.
 
@@ -91,7 +91,7 @@ Useful commands:
 npm run tauri dev
 npm run tauri build
 npm run icons
-cargo check --manifest-path src/Cargo.toml
+cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
 ## Testing
@@ -99,7 +99,7 @@ cargo check --manifest-path src/Cargo.toml
 Run the Rust unit tests:
 
 ```sh
-cargo test --manifest-path src/Cargo.toml --lib
+cargo test --manifest-path src-tauri/Cargo.toml --lib
 ```
 
 These cover the platform-independent logic: preference defaults, JSON
@@ -113,7 +113,7 @@ not automatically tested. Verify those manually on macOS 26.0+ by running
 
 ## Icons
 
-Use `src/icons/icon-large.png` as the source artwork. The ideal source is a square `1024x1024` PNG with transparency if needed. The current Tauri config points at this source file so the project remains buildable before derived icons are generated.
+Use `src-tauri/icons/icon-large.png` as the source artwork. The ideal source is a square `1024x1024` PNG with transparency if needed. The current Tauri config points at this source file so the project remains buildable before derived icons are generated.
 
 When the source PNG changes, regenerate the derived Tauri packaging icons:
 

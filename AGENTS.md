@@ -126,12 +126,12 @@ npm install
 npm run tauri dev
 
 # Run tests
-cargo check --manifest-path src/Cargo.toml
+cargo check --manifest-path src-tauri/Cargo.toml
 
 # Run lint/type checks
-cargo check --manifest-path src/Cargo.toml
+cargo check --manifest-path src-tauri/Cargo.toml
 
-# Regenerate packaging icons after changing src/icons/icon-large.png
+# Regenerate packaging icons after changing src-tauri/icons/icon-large.png
 npm run icons
 ```
 
