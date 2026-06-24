@@ -20,12 +20,17 @@ Add requirements here as they become known. Use clear, testable language where p
 
 Glimpse must support MacOS, but may be extended to Windows users later.
 Glimpse should provide a simple icon in the menu bar on MacOS or Windows system tray.
-When the icon is clicked, a small window should appear showing the video from the default camera.
+When the icon is clicked, a small "Glimpse" window should appear showing the video from the default camera.
+The position of the "Glimpse" window should be movable by the user by clicking anywhere in the window and dragging.
+The initial position of the "Glimpse" window should be directly under the menu bar icon, centered horizontally.
+The window size should be changed by dragging an edge or corner.
 Right-click on the app icon should show app configuration.
 App configuration should include:
     - Change the camera
     - Enable/disable startup on system boot
+    - Reset window position/size to default
     - Exit the app
+If the camera is unable to start, show a black window with a clear and well styled message with technical details below (if available or essential)
 
 ### Non-Functional Requirements
 
@@ -36,6 +41,17 @@ Use standard and well supported open-source libraries for implementation.
 ## Architecture Notes
 
 Glimpse should be designed as a small native desktop utility, not a full windowed application. The default user interaction is through a macOS menu bar icon, with Windows system tray support planned for a later phase.
+
+Recommended stack:
+
+- Application framework: Tauri v2.
+- Native/application layer: Rust.
+- Frontend layer: Svelte, TypeScript, and Vite.
+- Camera preview: browser `navigator.mediaDevices.getUserMedia()` in the Tauri WebView.
+- Preferences: Tauri store plugin or a small Rust-managed user config file.
+- Startup on boot: Tauri autostart plugin.
+- Packaging: Tauri bundler, with macOS signing/notarization and Windows code signing added before distribution.
+- Testing: Rust unit tests, Vitest for frontend logic, and Playwright/WebDriver-style smoke tests where useful.
 
 - Main modules/components:
   - Application shell for native lifecycle management.
@@ -136,15 +152,10 @@ When working in this repository:
 3. Make focused changes that preserve existing behavior unless asked otherwise.
 4. Run relevant validation commands.
 5. Report what changed, what was verified, and any remaining risks.
+6. Ensure the README.md is maintained.
 
 ## Open Questions
 
 Use this section to capture unresolved project decisions.
 
-- Which desktop application framework will be used?
-- What is the minimum supported macOS version?
-- When should Windows support be introduced?
-- Should the preview window remember size and position?
-- Should Glimpse show lighting or framing guidance, or only provide a camera preview?
-- How should camera permission failures be surfaced to the user?
-- What packaging, signing, and auto-update approach should be used?
+- None.
