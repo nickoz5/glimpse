@@ -1,17 +1,29 @@
 # Glimpse
 
-Glimpse is a small desktop camera preview utility for people working from home. It lives in the macOS menu bar.
+### A small menu bar app for checking your camera before a video call.
 
-## Stack
+![Platform: macOS 26+](https://img.shields.io/badge/platform-macOS%2026%2B-black) ![Status: early project](https://img.shields.io/badge/status-early%20project-6b7280) ![Stack: Tauri v2 + Rust](https://img.shields.io/badge/stack-Tauri%20v2%20%2B%20Rust-0f766e)
 
-- Tauri v2
-- Rust
-- AppKit
-- AVFoundation
+[Why Glimpse?](#why-glimpse) · [Quick Start](#quick-start) · [Current Capabilities](#current-capabilities) · [Development](#development)
 
-## Installation
+Glimpse is a native macOS camera preview utility for people who want a fast pre-call check without opening Zoom, Meet, or Teams first. It lives in the menu bar and gives you a quick way to confirm that your camera is working, your face is framed well, and your lighting looks right before you go on screen.
 
-### Prerequisites
+Use Glimpse to:
+
+- make sure the camera is actually available before the call starts
+- check framing, angle, and eye line
+- catch bad lighting or awkward background composition early
+- open a lightweight preview without launching a full meeting app
+
+## Why Glimpse?
+
+Most video call apps only show you what you look like after you are already in their flow. Glimpse is built for the few seconds before that moment.
+
+Open it from the menu bar, sanity-check your setup, then close it and join the call.
+
+## Quick Start
+
+### 1. Prerequisites
 
 - macOS 26.0 or newer
 - Xcode Command Line Tools
@@ -30,21 +42,21 @@ Install Rust:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Install project dependencies:
+### 2. Install Dependencies
 
 ```sh
 npm install
 ```
 
-### Run Locally
+### 3. Run Glimpse Locally
 
 ```sh
 npm run tauri dev
 ```
 
-Glimpse appears in the macOS menu bar. Click the menu bar icon to open the camera preview. Click outside the preview to close it.
+Glimpse appears in the macOS menu bar. Click the menu bar icon to show the camera preview. Click outside the preview to close it.
 
-### Build The App
+### 4. Build The App
 
 ```sh
 npm run tauri build
@@ -54,7 +66,24 @@ The packaged app is written under `src/target/release/bundle/`.
 
 For local testing, open the generated `.app`. For distribution, add proper macOS code signing and notarization before sharing the app.
 
-## Useful Commands
+## Current Capabilities
+
+- Native macOS tray or menu bar app shell
+- Click tray icon to show or hide the camera preview
+- Native camera preview from the default or selected camera
+- Right-click menu for camera selection, startup on boot, reset, and exit
+- Local JSON-backed preferences
+
+## Stack
+
+- Tauri v2
+- Rust
+- AppKit
+- AVFoundation
+
+## Development
+
+Useful commands:
 
 ```sh
 npm run tauri dev
@@ -78,11 +107,3 @@ To use a different source file:
 ```sh
 bash scripts/regenerate-icons.sh path/to/source.png
 ```
-
-## Current Scope
-
-- Native tray/menu bar app shell.
-- Click tray icon to show or hide the camera preview.
-- Right-click tray menu for camera selection, startup toggle, reset, and exit.
-- Native macOS camera preview from the default or selected camera.
-- JSON-backed local preferences.
