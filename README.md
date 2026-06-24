@@ -6,6 +6,8 @@
 
 [Why Glimpse?](#why-glimpse) · [Quick Start](#quick-start) · [Current Capabilities](#current-capabilities) · [Development](#development)
 
+![Glimpse hero image showing a pre-call camera setup with lighting, framing, and camera readiness cues](docs/images/glimpse.png)
+
 Glimpse is a native macOS camera preview utility for people who want a fast pre-call check without opening Zoom, Meet, or Teams first. It lives in the menu bar and gives you a quick way to confirm that your camera is working, your face is framed well, and your lighting looks right before you go on screen.
 
 Use Glimpse to:
