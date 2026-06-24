@@ -451,3 +451,175 @@ fn preserve_latest_window_frame(path: &Path, preferences: &mut Preferences) {
         preferences.preview_window_frame = Some(frame);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    // Produces a unique, isolated temp path per call so tests can run in
+    // parallel without sharing preference files.
+    fn temp_preferences_path() -> PathBuf {
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
+        let unique = COUNTER.fetch_add(1, Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "glimpse-test-prefs-{}-{}.json",
+            std::process::id(),
+            unique
+        ))
+    }
+
+    fn sample_frame() -> WindowFrame {
+        WindowFrame {
+            x: 10.0,
+            y: 20.0,
+            width: 300.0,
+            height: 200.0,
+        }
+    }
+
+    // Base requirement: a fresh install has no camera selected, startup
+    // disabled, and no stored window frame.
+    #[test]
+    fn default_preferences_are_empty() {
+        let preferences = Preferences::default();
+        assert_eq!(preferences.selected_camera_id, None);
+        assert!(!preferences.launch_at_login);
+        assert!(preferences.preview_window_frame.is_none());
+    }
+
+    // Base requirement: the JSON-backed preferences (camera, startup,
+    // window placement) round-trip without loss.
+    #[test]
+    fn preferences_serde_round_trip() {
+        let preferences = Preferences {
+            selected_camera_id: Some("cam-42".to_string()),
+            launch_at_login: true,
+            preview_window_frame: Some(sample_frame()),
+        };
+
+        let json = serde_json::to_string(&preferences).expect("serialize");
+        let restored: Preferences = serde_json::from_str(&json).expect("deserialize");
+
+        assert_eq!(restored.selected_camera_id, Some("cam-42".to_string()));
+        assert!(restored.launch_at_login);
+        let frame = restored.preview_window_frame.expect("frame present");
+        assert_eq!(frame.x, 10.0);
+        assert_eq!(frame.y, 20.0);
+        assert_eq!(frame.width, 300.0);
+        assert_eq!(frame.height, 200.0);
+    }
+
+    // Base requirement: preferences persist across save/load.
+    #[test]
+    fn save_then_load_round_trips() {
+        let path = temp_preferences_path();
+        let preferences = Preferences {
+            selected_camera_id: Some("cam-1".to_string()),
+            launch_at_login: true,
+            preview_window_frame: Some(sample_frame()),
+        };
+
+        save_preferences(&path, &preferences).expect("save preferences");
+        let loaded = load_preferences(&path);
+
+        assert_eq!(loaded.selected_camera_id, Some("cam-1".to_string()));
+        assert!(loaded.launch_at_login);
+        assert!(loaded.preview_window_frame.is_some());
+
+        let _ = fs::remove_file(&path);
+    }
+
+    // Regression: a missing preferences file must not panic and should fall
+    // back to defaults (first launch before any preferences are written).
+    #[test]
+    fn load_preferences_missing_file_returns_default() {
+        let path = temp_preferences_path();
+        assert!(!path.exists());
+
+        let loaded = load_preferences(&path);
+
+        assert_eq!(loaded.selected_camera_id, None);
+        assert!(!loaded.launch_at_login);
+        assert!(loaded.preview_window_frame.is_none());
+    }
+
+    // Regression: a corrupt preferences file must not panic and should fall
+    // back to defaults rather than failing to start.
+    #[test]
+    fn load_preferences_corrupt_file_returns_default() {
+        let path = temp_preferences_path();
+        fs::write(&path, "{ this is not valid json ]").expect("write corrupt file");
+
+        let loaded = load_preferences(&path);
+
+        assert_eq!(loaded.selected_camera_id, None);
+        assert!(!loaded.launch_at_login);
+        assert!(loaded.preview_window_frame.is_none());
+
+        let _ = fs::remove_file(&path);
+    }
+
+    // Base requirement: the initial window appears directly under the menu
+    // bar icon, centered horizontally on the icon.
+    #[test]
+    fn window_position_under_tray_centers_horizontally() {
+        let tray = PhysicalPosition::new(500.0, 12.0);
+
+        let (x, y) = window_position_under_tray(tray);
+
+        assert_eq!(x, 500.0 - (DEFAULT_WIDTH / 2.0));
+        assert_eq!(y, 12.0 + 8.0);
+    }
+
+    // Regression: saving an unrelated preference (camera/startup) must not
+    // discard a window frame the native layer wrote to disk in the meantime.
+    #[test]
+    fn preserve_latest_window_frame_keeps_frame_from_disk() {
+        let path = temp_preferences_path();
+        let on_disk = Preferences {
+            selected_camera_id: None,
+            launch_at_login: false,
+            preview_window_frame: Some(sample_frame()),
+        };
+        save_preferences(&path, &on_disk).expect("seed disk frame");
+
+        let mut in_memory = Preferences {
+            selected_camera_id: Some("cam-9".to_string()),
+            launch_at_login: true,
+            preview_window_frame: None,
+        };
+        preserve_latest_window_frame(&path, &mut in_memory);
+
+        let frame = in_memory
+            .preview_window_frame
+            .expect("frame restored from disk");
+        assert_eq!(frame.width, 300.0);
+        assert_eq!(frame.height, 200.0);
+        // Other in-memory fields are untouched.
+        assert_eq!(in_memory.selected_camera_id, Some("cam-9".to_string()));
+        assert!(in_memory.launch_at_login);
+
+        let _ = fs::remove_file(&path);
+    }
+
+    // Regression: when no frame exists on disk, preservation must leave the
+    // in-memory frame untouched rather than overwriting it.
+    #[test]
+    fn preserve_latest_window_frame_without_disk_frame_is_noop() {
+        let path = temp_preferences_path();
+        let on_disk = Preferences::default();
+        save_preferences(&path, &on_disk).expect("seed disk");
+
+        let mut in_memory = Preferences {
+            selected_camera_id: None,
+            launch_at_login: false,
+            preview_window_frame: Some(sample_frame()),
+        };
+        preserve_latest_window_frame(&path, &mut in_memory);
+
+        assert!(in_memory.preview_window_frame.is_some());
+
+        let _ = fs::remove_file(&path);
+    }
+}

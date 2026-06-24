@@ -94,6 +94,23 @@ npm run icons
 cargo check --manifest-path src/Cargo.toml
 ```
 
+## Testing
+
+Run the Rust unit tests:
+
+```sh
+cargo test --manifest-path src/Cargo.toml --lib
+```
+
+These cover the platform-independent logic: preference defaults, JSON
+preference persistence (including missing and corrupt files), initial preview
+window placement under the tray icon, and window-frame preservation across
+preference writes.
+
+The native macOS camera, menu bar, permission, and startup-on-boot behavior is
+not automatically tested. Verify those manually on macOS 26.0+ by running
+`npm run tauri dev`.
+
 ## Icons
 
 Use `src/icons/icon-large.png` as the source artwork. The ideal source is a square `1024x1024` PNG with transparency if needed. The current Tauri config points at this source file so the project remains buildable before derived icons are generated.
