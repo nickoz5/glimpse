@@ -8,7 +8,7 @@ use std::{
 };
 use tauri::{
     image::Image,
-    menu::{Menu, MenuItem, Submenu},
+    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     App, AppHandle, Manager, PhysicalPosition, State,
 };
@@ -55,6 +55,13 @@ pub extern "C" fn glimpse_native_frame_changed(x: f64, y: f64, width: f64, heigh
 struct AppState {
     preferences_path: PathBuf,
     preferences: Mutex<Preferences>,
+    camera_menu_items: Mutex<Vec<CameraMenuItem>>,
+    automatic_startup_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+}
+
+struct CameraMenuItem {
+    device_id: Option<String>,
+    item: CheckMenuItem<tauri::Wry>,
 }
 
 #[tauri::command]
@@ -78,7 +85,9 @@ fn set_selected_camera(
         .map_err(|_| "Preferences lock was poisoned".to_string())?;
 
     preferences.selected_camera_id = device_id.filter(|value| !value.is_empty());
-    native_camera::set_camera(preferences.selected_camera_id.as_deref());
+    let selected_camera_id = preferences.selected_camera_id.clone();
+    native_camera::set_camera(selected_camera_id.as_deref());
+    update_camera_menu_selection(&state, selected_camera_id.as_deref());
     preserve_latest_window_frame(&state.preferences_path, &mut preferences);
     save_preferences(&state.preferences_path, &preferences)
 }
@@ -97,6 +106,7 @@ fn set_launch_at_login(
         .map_err(|_| "Preferences lock was poisoned".to_string())?;
 
     preferences.launch_at_login = enabled;
+    update_automatic_startup_menu_item(&state, enabled);
     preserve_latest_window_frame(&state.preferences_path, &mut preferences);
     save_preferences(&state.preferences_path, &preferences)
 }
@@ -157,6 +167,8 @@ fn setup_app(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     app.manage(AppState {
         preferences_path,
         preferences: Mutex::new(preferences),
+        camera_menu_items: Mutex::new(Vec::new()),
+        automatic_startup_item: Mutex::new(None),
     });
 
     create_tray(&app_handle)?;
@@ -166,28 +178,28 @@ fn setup_app(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
 fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     let camera_items = camera_menu_items(app)?;
-    let camera_item_refs = camera_items
+    let mut menu_items = camera_items
         .iter()
-        .map(|item| item as &dyn tauri::menu::IsMenuItem<_>)
+        .map(|camera| &camera.item as &dyn tauri::menu::IsMenuItem<_>)
         .collect::<Vec<_>>();
-    let camera_menu =
-        Submenu::with_id_and_items(app, "camera_menu", "Camera", true, &camera_item_refs)?;
-    let toggle_startup = MenuItem::with_id(
+    let separator = PredefinedMenuItem::separator(app)?;
+    let toggle_startup = CheckMenuItem::with_id(
         app,
         "toggle_startup",
         "Enable Automatic Startup",
         true,
+        automatic_startup_enabled(app),
         None::<&str>,
     )?;
-    let reset_window = MenuItem::with_id(
-        app,
-        "reset_window",
-        "Reset Window",
-        true,
-        None::<&str>,
-    )?;
+    let reset_window = MenuItem::with_id(app, "reset_window", "Reset Window", true, None::<&str>)?;
     let exit = MenuItem::with_id(app, "exit", "Exit Glimpse", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&camera_menu, &toggle_startup, &reset_window, &exit])?;
+    menu_items.extend([
+        &separator as &dyn tauri::menu::IsMenuItem<_>,
+        &toggle_startup,
+        &reset_window,
+        &exit,
+    ]);
+    let menu = Menu::with_items(app, &menu_items)?;
 
     TrayIconBuilder::with_id("glimpse-tray")
         .icon(Image::from_bytes(include_bytes!(
@@ -212,26 +224,47 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         })
         .build(app)?;
 
+    let state = app.state::<AppState>();
+    if let Ok(mut stored_items) = state.camera_menu_items.lock() {
+        *stored_items = camera_items;
+    } else {
+        eprintln!("failed to retain camera menu items: camera menu lock was poisoned");
+    }
+    if let Ok(mut stored_item) = state.automatic_startup_item.lock() {
+        *stored_item = Some(toggle_startup);
+    } else {
+        eprintln!("failed to retain automatic startup menu item: menu lock was poisoned");
+    }
+
     Ok(())
 }
 
-fn camera_menu_items(app: &AppHandle) -> tauri::Result<Vec<MenuItem<tauri::Wry>>> {
-    let mut items = vec![MenuItem::with_id(
-        app,
-        "camera_default",
-        "Default Camera",
-        true,
-        None::<&str>,
-    )?];
+fn camera_menu_items(app: &AppHandle) -> tauri::Result<Vec<CameraMenuItem>> {
+    let selected_camera_id = selected_camera_id(app);
+    let mut items = vec![CameraMenuItem {
+        device_id: None,
+        item: CheckMenuItem::with_id(
+            app,
+            "camera_default",
+            "Default Camera",
+            true,
+            selected_camera_id.is_none(),
+            None::<&str>,
+        )?,
+    }];
 
     for (index, device) in native_camera::devices().iter().enumerate() {
-        items.push(MenuItem::with_id(
-            app,
-            format!("camera_{index}"),
-            &device.name,
-            true,
-            None::<&str>,
-        )?);
+        items.push(CameraMenuItem {
+            device_id: Some(device.id.clone()),
+            item: CheckMenuItem::with_id(
+                app,
+                format!("camera_{index}"),
+                &device.name,
+                true,
+                selected_camera_id.as_deref() == Some(device.id.as_str()),
+                None::<&str>,
+            )?,
+        });
     }
 
     Ok(items)
@@ -319,12 +352,55 @@ fn set_camera(app: &AppHandle, device_id: Option<String>) {
     };
 
     preferences.selected_camera_id = device_id.filter(|value| !value.is_empty());
+    let selected_camera_id = preferences.selected_camera_id.clone();
     preserve_latest_window_frame(&state.preferences_path, &mut preferences);
     if let Err(error) = save_preferences(&state.preferences_path, &preferences) {
         eprintln!("failed to save selected camera: {error}");
     }
 
-    native_camera::set_camera(preferences.selected_camera_id.as_deref());
+    native_camera::set_camera(selected_camera_id.as_deref());
+    update_camera_menu_selection(&state, selected_camera_id.as_deref());
+}
+
+fn update_camera_menu_selection(state: &AppState, selected_camera_id: Option<&str>) {
+    let camera_menu_items = match state.camera_menu_items.lock() {
+        Ok(items) => items,
+        Err(_) => {
+            eprintln!("failed to update camera menu: camera menu lock was poisoned");
+            return;
+        }
+    };
+
+    for camera in camera_menu_items.iter() {
+        let checked = camera.device_id.as_deref() == selected_camera_id;
+        if let Err(error) = camera.item.set_checked(checked) {
+            eprintln!("failed to update camera menu item: {error}");
+        }
+    }
+}
+
+fn automatic_startup_enabled(app: &AppHandle) -> bool {
+    app.state::<AppState>()
+        .preferences
+        .lock()
+        .map(|preferences| preferences.launch_at_login)
+        .unwrap_or(false)
+}
+
+fn update_automatic_startup_menu_item(state: &AppState, enabled: bool) {
+    let automatic_startup_item = match state.automatic_startup_item.lock() {
+        Ok(item) => item,
+        Err(_) => {
+            eprintln!("failed to update automatic startup menu: menu lock was poisoned");
+            return;
+        }
+    };
+
+    if let Some(item) = automatic_startup_item.as_ref() {
+        if let Err(error) = item.set_checked(enabled) {
+            eprintln!("failed to update automatic startup menu item: {error}");
+        }
+    }
 }
 
 fn toggle_launch_at_login(app: &AppHandle) -> Result<(), String> {
@@ -337,6 +413,7 @@ fn toggle_launch_at_login(app: &AppHandle) -> Result<(), String> {
 
     set_autostart(app, next_value)?;
     preferences.launch_at_login = next_value;
+    update_automatic_startup_menu_item(&state, next_value);
     preserve_latest_window_frame(&state.preferences_path, &mut preferences);
     save_preferences(&state.preferences_path, &preferences)
 }
