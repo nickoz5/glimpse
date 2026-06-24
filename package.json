@@ -1,0 +1,15 @@
+{
+  "name": "glimpse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "icons": "bash scripts/regenerate-icons.sh",
+    "icons:source": "bash scripts/regenerate-icons.sh src/icons/icon-large.png",
+    "tauri": "tauri"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

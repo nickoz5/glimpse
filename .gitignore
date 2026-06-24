@@ -1,0 +1,7 @@
+node_modules/
+dist/
+src/target/
+src/gen/
+*.log
+.DS_Store
+
