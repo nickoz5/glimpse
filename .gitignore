@@ -1,7 +1,9 @@
-node_modules/
-dist/
-src-tauri/target/
-src-tauri/gen/
-*.log
-.DS_Store
+# Swift / SwiftPM
+.build/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
 
+# macOS
+.DS_Store
+*.log

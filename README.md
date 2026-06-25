@@ -2,9 +2,9 @@
 
 ### A small menu bar app for checking your camera before a video call.
 
-![Platform: macOS 26+](https://img.shields.io/badge/platform-macOS%2026%2B-black) ![Status: early project](https://img.shields.io/badge/status-early%20project-6b7280) ![Stack: Tauri v2 + Rust](https://img.shields.io/badge/stack-Tauri%20v2%20%2B%20Rust-0f766e)
+![Platform: macOS 26+](https://img.shields.io/badge/platform-macOS%2026%2B-black) ![Status: early project](https://img.shields.io/badge/status-early%20project-6b7280) ![Stack: Xcode + Swift](https://img.shields.io/badge/stack-XCode%20%2B%20Swift-0f766e)
 
-[Why Glimpse?](#why-glimpse) · [Quick Start](#quick-start) · [Current Capabilities](#current-capabilities) · [Development](#development)
+[Why Glimpse?](#why-glimpse) · [Building](#building) · [Architecture](#architecture) · [Testing](#testing)
 
 ![Glimpse hero image showing a pre-call camera setup with lighting, framing, and camera readiness cues](docs/images/glimpse.png)
 
@@ -23,107 +23,76 @@ Most video call apps only show you what you look like after you are already in t
 
 Open it from the menu bar, sanity-check your setup, then close it and join the call.
 
-## Quick Start
-
-### 1. Prerequisites
+## Requirements
 
 - macOS 26.0 or newer
-- Xcode Command Line Tools
-- Rust toolchain
-- Node.js and npm
+- Xcode 26 / Swift 6 toolchain (to build)
 
-Install Xcode Command Line Tools:
+## Building
 
-```sh
-xcode-select --install
-```
-
-Install Rust:
+Glimpse is a Swift Package built via `make`. The executable target is wrapped
+in an `.app` bundle so macOS applies the camera-usage description and
+menu-bar-only (`LSUIElement`) behaviour.
 
 ```sh
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+make            # build and assemble .build/Glimpse.app (release)
+make run        # build the bundle and launch it
+make test       # run the unit tests
+make clean      # remove build artifacts
+make help       # list all targets
 ```
 
-### 2. Install Dependencies
+Use `CONFIG=debug` for a debug build (e.g. `make CONFIG=debug`). For quick
+iteration you can also call SwiftPM directly with `swift build` / `swift test`,
+and open the package in Xcode with `xed .` (or `open Package.swift`).
 
-```sh
-npm install
+> The first time you open the preview, macOS will ask for camera permission.
+> Grant it under **System Settings › Privacy & Security › Camera** if you miss
+> the prompt.
+
+## Architecture
+
+The code follows the module layout described in `AGENTS.md`:
+
+```
+Sources/Glimpse/
+├── App/        Application lifecycle (NSApplication bootstrap, AppDelegate)
+├── MenuBar/    Status item + native configuration menu
+├── Camera/     CameraManager, device discovery, permissions, preview layer
+├── Windows/    Floating preview panel, positioning, persistence
+├── Settings/   UserDefaults-backed preferences, launch-at-login
+└── Views/      SwiftUI preview content and error views
 ```
 
-### 3. Run Glimpse Locally
+Design notes:
 
-```sh
-npm run tauri dev
-```
-
-Glimpse appears in the macOS menu bar. Click the menu bar icon to show or hide the camera preview. The preview also closes from its window close button.
-
-### 4. Build The App
-
-```sh
-npm run tauri build
-```
-
-The packaged app is written under `src-tauri/target/release/bundle/`.
-
-For local testing, open the generated `.app`. For distribution, add proper macOS code signing and notarization before sharing the app.
-
-## Current Capabilities
-
-- Native macOS tray or menu bar app shell
-- Click tray icon to show or hide the camera preview
-- Native camera preview from the default or selected camera
-- Preview window stays above normal application windows until hidden or closed
-- Right-click menu for camera selection, startup on boot, reset, and exit
-- Local JSON-backed preferences
-
-## Stack
-
-- Tauri v2
-- Rust
-- AppKit
-- AVFoundation
-
-## Development
-
-Useful commands:
-
-```sh
-npm run tauri dev
-npm run tauri build
-npm run icons
-cargo check --manifest-path src-tauri/Cargo.toml
-```
+- **Business logic stays out of views.** Camera state lives in `CameraManager`;
+  views simply render it.
+- **Camera logic is isolated** inside `CameraManager`, behind a mockable
+  `CameraDiscovering` protocol.
+- **AppKit is used only where SwiftUI can't reach** — distinguishing left/right
+  clicks on the status item, hosting the live `AVCaptureVideoPreviewLayer`, and
+  driving a free-floating, draggable, resizable panel.
+- **Geometry and persistence are pure and tested** (`PreviewPositioner`,
+  `Preferences`, `CameraSelection`).
 
 ## Testing
 
-Run the Rust unit tests:
+Unit tests cover the deterministic logic — preferences round-tripping and
+validation, window positioning and clamping, camera selection rules (with a
+mock discovery source), and error presentation:
 
 ```sh
-cargo test --manifest-path src-tauri/Cargo.toml --lib
+swift test
 ```
 
-These cover the platform-independent logic: preference defaults, JSON
-preference persistence (including missing and corrupt files), initial preview
-window placement under the tray icon, and window-frame preservation across
-preference writes.
+The following are verified manually, as they depend on hardware and system
+services:
 
-The native macOS camera, menu bar, permission, and startup-on-boot behavior is
-not automatically tested. Verify those manually on macOS 26.0+ by running
-`npm run tauri dev`.
-
-## Icons
-
-Use `src-tauri/icons/icon-large.png` as the source artwork. The ideal source is a square `1024x1024` PNG with transparency if needed. The current Tauri config points at this source file so the project remains buildable before derived icons are generated.
-
-When the source PNG changes, regenerate the derived Tauri packaging icons:
-
-```sh
-npm run icons
-```
-
-To use a different source file:
-
-```sh
-bash scripts/regenerate-icons.sh path/to/source.png
-```
+- Camera permission prompt and denial handling
+- Switching between cameras
+- Menu bar left/right-click behaviour
+- Launch at login
+- Window positioning beneath the icon
+- Drag and resize, with frame persistence
+- Multiple-monitor placement

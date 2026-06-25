@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:glimpse}",
+            "name": "Debug Glimpse",
+            "target": "Glimpse",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Glimpse"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:glimpse}",
+            "name": "Release Glimpse",
+            "target": "Glimpse",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Glimpse"
+        }
+    ]
+}
