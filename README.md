@@ -56,7 +56,7 @@ npm install
 npm run tauri dev
 ```
 
-Glimpse appears in the macOS menu bar. Click the menu bar icon to show the camera preview. Click outside the preview to close it.
+Glimpse appears in the macOS menu bar. Click the menu bar icon to show or hide the camera preview. The preview also closes from its window close button.
 
 ### 4. Build The App
 
@@ -73,6 +73,7 @@ For local testing, open the generated `.app`. For distribution, add proper macOS
 - Native macOS tray or menu bar app shell
 - Click tray icon to show or hide the camera preview
 - Native camera preview from the default or selected camera
+- Preview window stays above normal application windows until hidden or closed
 - Right-click menu for camera selection, startup on boot, reset, and exit
 - Local JSON-backed preferences
 

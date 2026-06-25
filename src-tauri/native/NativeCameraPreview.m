@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <string.h>
 
-static NSPanel *glimpsePanel = nil;
+static NSWindow *glimpsePanel = nil;
 static NSView *glimpsePreviewView = nil;
 static NSTextField *glimpseMessageTitle = nil;
 static NSTextField *glimpseMessageDetail = nil;
@@ -18,7 +18,6 @@ static double glimpseDefaultWidth = 360.0;
 static double glimpseDefaultHeight = 240.0;
 static NSRect glimpseSavedFrame;
 static BOOL glimpseHasSavedFrame = NO;
-static id glimpseOutsideClickMonitor = nil;
 
 void glimpse_native_hide(void);
 void glimpse_native_frame_changed(double x, double y, double width, double height);
@@ -27,34 +26,6 @@ static void rememberFrame(NSRect frame) {
   glimpseSavedFrame = frame;
   glimpseHasSavedFrame = YES;
   glimpse_native_frame_changed(frame.origin.x, frame.origin.y, frame.size.width, frame.size.height);
-}
-
-static void installOutsideClickMonitor(void) {
-  if (glimpseOutsideClickMonitor != nil) {
-    return;
-  }
-
-  glimpseOutsideClickMonitor = [NSEvent addGlobalMonitorForEventsMatchingMask:
-      NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown
-      handler:^(NSEvent *event) {
-        (void)event;
-        if (glimpsePanel == nil || !glimpsePanel.isVisible) {
-          return;
-        }
-
-        if (!NSPointInRect(NSEvent.mouseLocation, glimpsePanel.frame)) {
-          glimpse_native_hide();
-        }
-      }];
-}
-
-static void removeOutsideClickMonitor(void) {
-  if (glimpseOutsideClickMonitor == nil) {
-    return;
-  }
-
-  [NSEvent removeMonitor:glimpseOutsideClickMonitor];
-  glimpseOutsideClickMonitor = nil;
 }
 
 void glimpse_native_configure_app(void) {
@@ -279,16 +250,17 @@ static void ensurePanel(void) {
   NSWindowStyleMask style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                             NSWindowStyleMaskResizable | NSWindowStyleMaskFullSizeContentView;
 
-  glimpsePanel = [[NSPanel alloc] initWithContentRect:frame
-                                           styleMask:style
-                                             backing:NSBackingStoreBuffered
-                                               defer:NO];
+  glimpsePanel = [[NSWindow alloc] initWithContentRect:frame
+                                             styleMask:style
+                                               backing:NSBackingStoreBuffered
+                                                 defer:NO];
   glimpsePanel.title = @"Glimpse";
   glimpsePanel.titleVisibility = NSWindowTitleHidden;
   glimpsePanel.titlebarAppearsTransparent = YES;
   glimpsePanel.releasedWhenClosed = NO;
+  glimpsePanel.canHide = NO;
   glimpsePanel.movableByWindowBackground = YES;
-  glimpsePanel.level = NSFloatingWindowLevel;
+  glimpsePanel.level = NSStatusWindowLevel;
   glimpsePanel.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces |
                                     NSWindowCollectionBehaviorFullScreenAuxiliary;
   glimpsePanel.backgroundColor = NSColor.blackColor;
@@ -407,7 +379,6 @@ void glimpse_native_show(double x, double y, double width, double height, const 
     rememberFrame(glimpsePanel.frame);
     [glimpsePanel makeKeyAndOrderFront:nil];
     [NSApp activateIgnoringOtherApps:YES];
-    installOutsideClickMonitor();
     startSession();
   });
 }
@@ -418,7 +389,6 @@ void glimpse_native_hide(void) {
       rememberFrame(glimpsePanel.frame);
     }
     stopSession();
-    removeOutsideClickMonitor();
     [glimpsePanel orderOut:nil];
   });
 }
@@ -438,7 +408,6 @@ void glimpse_native_reset(double x, double y, double width, double height, const
     rememberFrame(glimpsePanel.frame);
     [glimpsePanel makeKeyAndOrderFront:nil];
     [NSApp activateIgnoringOtherApps:YES];
-    installOutsideClickMonitor();
     startSession();
   });
 }
