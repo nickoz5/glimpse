@@ -12,6 +12,13 @@ struct CameraPreviewView: NSViewRepresentable {
         let view = PreviewLayerView()
         view.previewLayer.session = session
         view.previewLayer.videoGravity = .resizeAspectFill
+        
+        // Mirror the preview for a natural "mirror" appearance
+        if let connection = view.previewLayer.connection {
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = true
+        }
+    
         return view
     }
 

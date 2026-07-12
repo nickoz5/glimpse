@@ -84,8 +84,8 @@ final class PreviewWindowController: NSObject, NSWindowDelegate {
         let panel = PreviewPanel(contentRect: initial)
         panel.delegate = self
 
-        let hosting = NSHostingView(rootView: content)
-        hosting.frame = panel.contentLayoutRect
+        let hosting = NSHostingView(rootView: content.ignoresSafeArea())
+        hosting.frame = panel.contentView?.bounds ?? .zero
         hosting.autoresizingMask = [.width, .height]
         panel.contentView?.addSubview(hosting)
 

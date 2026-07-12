@@ -33,6 +33,8 @@ final class PreviewPanel: NSPanel {
         titlebarAppearsTransparent = true
         titleVisibility = .hidden
         title = "Glimpse"
+        backgroundColor = .clear
+        isOpaque = false
 
         // Keep the preview usable even when shrunk aggressively.
         minSize = NSSize(width: 160, height: 120)
