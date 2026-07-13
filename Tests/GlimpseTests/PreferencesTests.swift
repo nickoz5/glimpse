@@ -25,6 +25,19 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.selectedCameraID, "cam-1")
     }
 
+    func testCameraMirroringDefaultsToOn() {
+        let prefs = Preferences(defaults: defaults)
+        XCTAssertTrue(prefs.isCameraMirrored)
+    }
+
+    func testCameraMirroringRoundTrips() {
+        let prefs = Preferences(defaults: defaults)
+        prefs.isCameraMirrored = false
+
+        let reloadedPrefs = Preferences(defaults: defaults)
+        XCTAssertFalse(reloadedPrefs.isCameraMirrored)
+    }
+
     func testPreviewFrameRoundTrips() {
         let prefs = Preferences(defaults: defaults)
         XCTAssertNil(prefs.previewFrame)

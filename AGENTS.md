@@ -29,6 +29,7 @@ This file guides LLM agents working in this repository. Keep it current as the a
 - Right-click opens a native configuration menu.
 - Configuration supports:
   - Camera selection.
+  - Camera mirroring.
   - Launch at login.
   - Reset window size and position.
   - Quit.

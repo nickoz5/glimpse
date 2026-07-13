@@ -60,7 +60,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func togglePreview() {
         windowController.toggle {
-            PreviewContentView(camera: camera)
+            PreviewContentView(camera: camera, preferences: preferences)
         }
     }
 
@@ -72,9 +72,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let menu = ConfigurationMenuBuilder.build(
             cameras: camera.cameras,
             activeCameraID: camera.activeCameraID,
+            isCameraMirrored: preferences.isCameraMirrored,
             launchAtLogin: LoginItem.isEnabled,
             target: self,
             selectCamera: #selector(selectCamera(_:)),
+            toggleMirror: #selector(toggleMirror(_:)),
             toggleLaunchAtLogin: #selector(toggleLaunchAtLogin(_:)),
             resetWindow: #selector(resetWindow(_:)),
             quit: #selector(quit(_:))
@@ -87,6 +89,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func selectCamera(_ sender: NSMenuItem) {
         guard let id = sender.representedObject as? String else { return }
         Task { await camera.select(cameraID: id) }
+    }
+
+    @objc private func toggleMirror(_ sender: NSMenuItem) {
+        preferences.isCameraMirrored.toggle()
     }
 
     @objc private func toggleLaunchAtLogin(_ sender: NSMenuItem) {
