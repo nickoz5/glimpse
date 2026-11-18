@@ -38,13 +38,13 @@ enum ConfigurationMenuBuilder {
             }
         }
 
+        menu.addItem(.separator())
+
         // Preview mirroring
         let mirror = NSMenuItem(title: "Mirror", action: toggleMirror, keyEquivalent: "")
         mirror.target = target
         mirror.state = isCameraMirrored ? .on : .off
         menu.addItem(mirror)
-
-        menu.addItem(.separator())
 
         // Launch at login
         let login = NSMenuItem(
