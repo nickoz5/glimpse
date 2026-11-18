@@ -19,7 +19,8 @@ struct PreviewContentView: View {
             case .running:
                 CameraPreviewView(
                     session: camera.session,
-                    isMirrored: preferences.isCameraMirrored
+                    isMirrored: preferences.isCameraMirrored,
+                    configurationGeneration: camera.configurationGeneration
                 )
             case .failed(let error):
                 CameraErrorView(error: error)
