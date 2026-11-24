@@ -173,6 +173,15 @@ Before making changes:
 6. Run tests where possible.
 7. Update README.md when functionality changes.
 
+## Attribution
+
+Include no AI attribution anywhere. This applies to:
+
+- Commit messages: no `Co-Authored-By` trailers naming an AI model or tool.
+- Pull request titles and descriptions: no "Generated with" footers or similar.
+- Code comments, documentation, README.md and release notes.
+- Issues, review comments and any other text written on behalf of the project.
+
 ## Definition of Done
 
 - Builds without warnings where practical.
