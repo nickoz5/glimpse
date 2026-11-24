@@ -8,9 +8,11 @@ enum ConfigurationMenuBuilder {
     static func build(
         cameras: [CameraDevice],
         activeCameraID: String?,
+        isCameraMirrored: Bool,
         launchAtLogin: Bool,
         target: AnyObject,
         selectCamera: Selector,
+        toggleMirror: Selector,
         toggleLaunchAtLogin: Selector,
         resetWindow: Selector,
         quit: Selector
@@ -37,6 +39,12 @@ enum ConfigurationMenuBuilder {
         }
 
         menu.addItem(.separator())
+
+        // Preview mirroring
+        let mirror = NSMenuItem(title: "Mirror", action: toggleMirror, keyEquivalent: "")
+        mirror.target = target
+        mirror.state = isCameraMirrored ? .on : .off
+        menu.addItem(mirror)
 
         // Launch at login
         let login = NSMenuItem(

@@ -16,6 +16,7 @@ Use Glimpse to:
 - check framing, angle, and eye line
 - catch bad lighting or awkward background composition early
 - open a lightweight preview without launching a full meeting app
+- toggle between mirrored and unmirrored camera previews from the menu bar
 
 ## Why Glimpse?
 
@@ -36,11 +37,15 @@ menu-bar-only (`LSUIElement`) behaviour.
 
 ```sh
 make            # build and assemble .build/Glimpse.app (release)
+make install    # build and install to ~/Applications
 make run        # build the bundle and launch it
 make test       # run the unit tests
 make clean      # remove build artifacts
 make help       # list all targets
 ```
+
+Set `INSTALL_DIR` to install elsewhere, such as
+`make install INSTALL_DIR=/Applications` for a system-wide installation.
 
 Use `CONFIG=debug` for a debug build (e.g. `make CONFIG=debug`). For quick
 iteration you can also call SwiftPM directly with `swift build` / `swift test`,
@@ -92,6 +97,7 @@ services:
 - Camera permission prompt and denial handling
 - Switching between cameras
 - Menu bar left/right-click behaviour
+- Camera mirror toggle
 - Launch at login
 - Window positioning beneath the icon
 - Drag and resize, with frame persistence

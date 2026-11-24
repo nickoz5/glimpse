@@ -10,10 +10,12 @@ BUILD_ROOT := .build
 BUILD_DIR  := $(BUILD_ROOT)/$(CONFIG)
 APP_BUNDLE := $(BUILD_ROOT)/$(APP_NAME).app
 EXECUTABLE := $(BUILD_DIR)/$(APP_NAME)
+INSTALL_DIR ?= $(HOME)/Applications
+INSTALLED_APP := $(INSTALL_DIR)/$(APP_NAME).app
 
 .DEFAULT_GOAL := app
 
-.PHONY: help build app run test clean
+.PHONY: help build app install run test clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -32,6 +34,13 @@ app: build ## Assemble $(APP_NAME).app
 	@codesign --force --deep --sign - "$(APP_BUNDLE)" >/dev/null 2>&1 \
 		|| echo "  (codesign skipped)"
 	@echo "✓ Built $(APP_BUNDLE)"
+
+install: app ## Install the app locally (default: ~/Applications)
+	@echo "▸ Installing $(APP_NAME).app to $(INSTALL_DIR)…"
+	@mkdir -p "$(INSTALL_DIR)"
+	@rm -rf "$(INSTALLED_APP)"
+	@ditto "$(APP_BUNDLE)" "$(INSTALLED_APP)"
+	@echo "✓ Installed $(INSTALLED_APP)"
 
 run: app ## Build the bundle and launch it
 	open "$(APP_BUNDLE)"

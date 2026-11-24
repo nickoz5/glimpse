@@ -7,6 +7,7 @@ import SwiftUI
 /// window controller in step with the window's visibility, not by this view.
 struct PreviewContentView: View {
     @ObservedObject var camera: CameraManager
+    @ObservedObject var preferences: Preferences
 
     var body: some View {
         Group {
@@ -16,7 +17,11 @@ struct PreviewContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.black)
             case .running:
-                CameraPreviewView(session: camera.session)
+                CameraPreviewView(
+                    session: camera.session,
+                    isMirrored: preferences.isCameraMirrored,
+                    configurationGeneration: camera.configurationGeneration
+                )
             case .failed(let error):
                 CameraErrorView(error: error)
             }

@@ -1,3 +1,4 @@
+import Combine
 import CoreGraphics
 import Foundation
 
@@ -5,17 +6,27 @@ import Foundation
 enum PreferenceKey {
     static let selectedCameraID = "selectedCameraID"
     static let previewFrame = "previewFrame"
+    static let isCameraMirrored = "isCameraMirrored"
 }
 
 /// Persists lightweight user preferences.
 ///
 /// Backed by `UserDefaults` but initialised with an injectable store so it can
 /// be exercised in tests against an isolated suite.
-final class Preferences {
+final class Preferences: ObservableObject {
     private let defaults: UserDefaults
+
+    /// Whether the camera preview should use a natural mirror appearance.
+    ///
+    /// Mirroring defaults to on to preserve the app's existing behaviour.
+    @Published var isCameraMirrored: Bool {
+        didSet { defaults.set(isCameraMirrored, forKey: PreferenceKey.isCameraMirrored) }
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        self.isCameraMirrored = defaults.object(forKey: PreferenceKey.isCameraMirrored) as? Bool
+            ?? true
     }
 
     /// Unique identifier of the camera the user last selected, if any.

@@ -14,7 +14,7 @@ final class PreviewWindowController: NSObject, NSWindowDelegate {
 
     /// Called when the window becomes visible; start the camera here.
     var onShow: (() -> Void)?
-    /// Called when the window is hidden (toggle, close, or minimise); stop the
+    /// Called when the window is hidden (toggle or close); stop the
     /// camera here so the capture LED turns off.
     var onHide: (() -> Void)?
 
@@ -62,7 +62,7 @@ final class PreviewWindowController: NSObject, NSWindowDelegate {
 
     // MARK: - NSWindowDelegate
 
-    /// Intercept the red close button: hide (and stop the camera) instead of
+    /// Intercept window close (⌘W): hide (and stop the camera) instead of
     /// destroying the window, so it can be re-shown from the menu bar.
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         hide()
@@ -84,22 +84,19 @@ final class PreviewWindowController: NSObject, NSWindowDelegate {
         let panel = PreviewPanel(contentRect: initial)
         panel.delegate = self
 
-        let hosting = NSHostingView(rootView: content.ignoresSafeArea())
+        // The window's only control: a custom close button in the top-left
+        // corner that hides the window (and stops the camera).
+        let root = content
+            .overlay(alignment: .topLeading) {
+                PreviewCloseButton { [weak self] in self?.hide() }
+                    .padding(8)
+            }
+            .ignoresSafeArea()
+        let hosting = FirstMouseHostingView(rootView: root)
         hosting.frame = panel.contentView?.bounds ?? .zero
         hosting.autoresizingMask = [.width, .height]
         panel.contentView?.addSubview(hosting)
-
-        // The yellow miniaturise button has no useful target on a Dock-less
-        // app, so repurpose it to hide the window (and stop the camera) too.
-        if let minimise = panel.standardWindowButton(.miniaturizeButton) {
-            minimise.target = self
-            minimise.action = #selector(miniaturiseButtonClicked)
-        }
         return panel
-    }
-
-    @objc private func miniaturiseButtonClicked() {
-        hide()
     }
 
     /// Returns the saved frame if present, otherwise the default, clamped to
@@ -130,4 +127,10 @@ final class PreviewWindowController: NSObject, NSWindowDelegate {
         guard let panel else { return }
         preferences.previewFrame = panel.frame
     }
+}
+
+/// Hosting view that responds to the first click even when the panel is not
+/// key, so the close button works without a preliminary focusing click.
+private final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

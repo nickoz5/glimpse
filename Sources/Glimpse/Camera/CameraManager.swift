@@ -19,6 +19,12 @@ final class CameraManager: ObservableObject {
     @Published private(set) var state: State = .idle
     @Published private(set) var cameras: [CameraDevice] = []
     @Published private(set) var activeCameraID: String?
+    /// Incremented each time the session's inputs are reconfigured.
+    ///
+    /// Reconfiguring replaces the preview layer's connection (resetting
+    /// per-connection settings such as mirroring), so views use this to know
+    /// when to re-apply them.
+    @Published private(set) var configurationGeneration = 0
 
     /// The capture session, shared with the preview layer.
     let session = AVCaptureSession()
@@ -126,6 +132,7 @@ final class CameraManager: ObservableObject {
 
         if configured {
             activeCameraID = device.id
+            configurationGeneration &+= 1
             state = .running
         } else {
             state = .failed(.deviceUnavailable)
